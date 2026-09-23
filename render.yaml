@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: staykhoj
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEV_AUTH_BYPASS
+        value: "false"
+      # Server-side Supabase connection. The URL is not sensitive; the service role
+      # key is, so it's left for you to paste in the Render dashboard after the
+      # first deploy (Environment tab) rather than committing it here.
+      - key: SUPABASE_URL
+        value: https://jvlezbinuaxmfocbetwn.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Client-side Supabase config, baked into the built SPA at build time.
+      # The anon key is designed to be public (access is enforced by RLS, see
+      # supabase/migrations), so it's safe to commit here.
+      - key: VITE_SUPABASE_URL
+        value: https://jvlezbinuaxmfocbetwn.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGV6YmludWF4bWZvY2JldHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4MzA0NDAsImV4cCI6MjEwNDQwNjQ0MH0.edMT33SKPEdusWrjwLYIjpdRq3_KFht4WmX2S7wcJ_E

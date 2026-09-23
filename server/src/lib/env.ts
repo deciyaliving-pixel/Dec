@@ -1,4 +1,10 @@
 export const PORT = Number(process.env.PORT ?? 8787);
-export const SITE_URL = (process.env.SITE_URL ?? `http://localhost:${PORT}`).replace(/\/$/, "");
+// RENDER_EXTERNAL_URL is auto-injected by Render (https://docs.render.com/environment-variables)
+// so SITE_URL doesn't need to be set by hand on that platform; SITE_URL still wins if set explicitly.
+export const SITE_URL = (
+  process.env.SITE_URL ??
+  process.env.RENDER_EXTERNAL_URL ??
+  `http://localhost:${PORT}`
+).replace(/\/$/, "");
 export const NODE_ENV = process.env.NODE_ENV ?? "development";
 export const IS_PRODUCTION = NODE_ENV === "production";
