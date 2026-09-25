@@ -3,11 +3,13 @@ services:
     name: staykhoj
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    buildCommand: npm install -g pnpm@10.33.0 && pnpm install --frozen-lockfile && pnpm build
     startCommand: pnpm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 22.11.0
       - key: DEV_AUTH_BYPASS
         value: "false"
       # Server-side Supabase connection. The URL is not sensitive; the service role
