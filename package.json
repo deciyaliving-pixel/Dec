@@ -1,0 +1,32 @@
+{
+  "name": "staykhoj",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "StayKhoj — an India travel journal and destination-discovery site.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @staykhoj/server dev",
+    "dev:client": "pnpm --filter @staykhoj/client dev",
+    "build": "pnpm --filter @staykhoj/shared build && pnpm --filter @staykhoj/client build && pnpm --filter @staykhoj/server build",
+    "start": "pnpm --filter @staykhoj/server start",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "typescript-eslint": "^8.15.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "^6.0.1"
+    }
+  }
+}
