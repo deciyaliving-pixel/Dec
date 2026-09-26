@@ -19,6 +19,7 @@ import { routeGuidesRouter } from "./routes/routeGuides.js";
 import { favoritesRouter } from "./routes/favorites.js";
 import { newsletterRouter } from "./routes/newsletter.js";
 import { studioRouter } from "./routes/studio.js";
+import { mcpRouter } from "./routes/mcp.js";
 import { buildRobotsTxt, buildSitemapXml } from "./seo/sitemap.js";
 import { injectHtml } from "./seo/htmlInject.js";
 import { resolveContentInjection } from "./seo/contentPages.js";
@@ -51,6 +52,10 @@ app.use("/api/routes", routeGuidesRouter);
 app.use("/api/favorites", favoritesRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/studio", studioRouter);
+
+// MCP connector: exposes published StayKhoj content (destinations, field
+// notes, routes) as tools any MCP-compatible AI client can call.
+app.use("/mcp", mcpRouter);
 
 app.get("/robots.txt", (_req, res) => {
   res.type("text/plain").send(buildRobotsTxt(SITE_URL));
