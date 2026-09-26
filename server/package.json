@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "@staykhoj/shared": "workspace:*",
     "@supabase/supabase-js": "^2.45.4",
     "compression": "^1.7.4",
