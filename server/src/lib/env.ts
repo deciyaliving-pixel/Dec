@@ -8,3 +8,7 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 export const NODE_ENV = process.env.NODE_ENV ?? "development";
 export const IS_PRODUCTION = NODE_ENV === "production";
+// Shared secret required by the MCP connector's write tools (e.g. drafting a
+// field note). Read-only MCP tools work without it; write tools are simply
+// unavailable (and error clearly) if it isn't set.
+export const MCP_ADMIN_TOKEN = process.env.MCP_ADMIN_TOKEN ?? null;

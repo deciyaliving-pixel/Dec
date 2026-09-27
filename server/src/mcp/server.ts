@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { FIELD_NOTE_CATEGORIES, MOODS, REGION_SLUGS, SEASONS } from "@staykhoj/shared";
+import { FIELD_NOTE_CATEGORIES, MOODS, REGION_SLUGS, SEASONS, fieldNoteSchema } from "@staykhoj/shared";
 import { getRepository } from "../lib/db.js";
 import type { ContentFilter } from "../lib/repository.js";
+import { MCP_ADMIN_TOKEN } from "../lib/env.js";
 
 const regionEnum = z.enum(REGION_SLUGS);
 const seasonEnum = z.enum(SEASONS);
@@ -33,9 +34,11 @@ const notFound = (kind: string, slug: string) => ({
 });
 
 /**
- * Every tool here only ever returns "published" content — draft and preview
- * content (including anything not yet marked verified_firsthand) never
- * reaches an external AI client through this connector.
+ * Every read tool here only ever returns "published" content — draft and
+ * preview content (including anything not yet marked verified_firsthand)
+ * never reaches an external AI client through this connector. The one write
+ * tool (create_field_note_draft) is gated behind MCP_ADMIN_TOKEN and can
+ * only ever create a draft, never publish.
  */
 export function createStayKhojMcpServer() {
   const server = new McpServer({ name: "staykhoj", version: "1.0.0" });
@@ -141,6 +144,85 @@ export function createStayKhojMcpServer() {
       const route = await repo.getRoute(slug);
       if (!route || route.status !== "published") return notFound("route", slug);
       return jsonResult(route);
+    },
+  );
+
+  server.tool(
+    "create_field_note_draft",
+    "Create a new StayKhoj field note as an editor draft, for a human to review and publish in Studio. " +
+      "Requires an admin token (ask the person you're talking to for it — it's a StayKhoj site secret, " +
+      "never something to guess or reuse from elsewhere). Always lands as status=draft with " +
+      "reportingStatus=planning_draft — this tool can never publish content directly, by design.",
+    {
+      adminToken: z.string().describe("The StayKhoj MCP admin token."),
+      slug: z.string().describe("Lowercase, hyphenated URL slug, e.g. 'monsoon-trekking-in-wayanad'."),
+      title: z.string(),
+      dek: z.string().describe("One-sentence standfirst shown under the title."),
+      category: categoryEnum,
+      regionSlugs: z.array(regionEnum).min(1),
+      seasons: z.array(seasonEnum).min(1),
+      moods: z.array(moodEnum).min(1),
+      body: z.string().describe("Article body. Write it as forward-looking planning research, not a firsthand account."),
+      heroImage: z.string().url(),
+      heroImageAlt: z.string(),
+      metaDescription: z.string().max(160),
+      authorId: z.string().optional().describe("Defaults to the 'author-staykhoj-desk' editorial byline."),
+      publishDate: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional()
+        .describe("ISO date (YYYY-MM-DD). Defaults to today."),
+    },
+    async (input) => {
+      if (!MCP_ADMIN_TOKEN || input.adminToken !== MCP_ADMIN_TOKEN) {
+        return {
+          content: [{ type: "text", text: "Invalid or missing admin token. This tool is not usable without it." }],
+          isError: true,
+        };
+      }
+
+      const wordCount = input.body.trim().split(/\s+/).filter(Boolean).length;
+      const candidate = {
+        id: `fn-${input.slug}`,
+        slug: input.slug,
+        title: input.title,
+        dek: input.dek,
+        category: input.category,
+        regionSlugs: input.regionSlugs,
+        seasons: input.seasons,
+        moods: input.moods,
+        body: input.body,
+        readTimeMinutes: Math.max(1, Math.ceil(wordCount / 200)),
+        heroImage: input.heroImage,
+        heroImageAlt: input.heroImageAlt,
+        metaDescription: input.metaDescription,
+        canonicalUrl: `/field-notes/${input.slug}`,
+        authorId: input.authorId ?? "author-staykhoj-desk",
+        publishDate: input.publishDate ?? new Date().toISOString().slice(0, 10),
+        hasTimeSensitiveInfo: false,
+        // Forced regardless of what a caller passes: this connector can only
+        // ever create drafts pending verification, never publish directly.
+        reportingStatus: "planning_draft" as const,
+        status: "draft" as const,
+        isSeedContent: false,
+        relatedDestinationSlugs: [],
+      };
+
+      const parsed = fieldNoteSchema.safeParse(candidate);
+      if (!parsed.success) {
+        return {
+          content: [{ type: "text", text: `Validation failed: ${JSON.stringify(parsed.error.issues, null, 2)}` }],
+          isError: true,
+        };
+      }
+
+      const saved = await repo.upsertFieldNote(parsed.data);
+      return jsonResult({
+        message: `Created draft field note "${saved.title}". It will not appear on the site until an editor reviews it in Studio and publishes it.`,
+        slug: saved.slug,
+        status: saved.status,
+        reportingStatus: saved.reportingStatus,
+      });
     },
   );
 
